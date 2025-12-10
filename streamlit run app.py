@@ -6,36 +6,26 @@ from datetime import datetime
 st.set_page_config(page_title="Nature Clock Ultra Pro", layout="wide")
 
 # -----------------------------------------------------
-# 🌄 REALISTIC BACKGROUNDS (replace if needed)
+# 🌄 BACKGROUNDS
 # -----------------------------------------------------
 BG_SUNNY = "https://i.imgur.com/R0BgbaN.jpeg"
 BG_CLOUDY = "https://i.imgur.com/k8hrmH0.jpeg"
 BG_RAINY = "https://i.imgur.com/VXQ4Rh4.jpeg"
 BG_NIGHT = "https://i.imgur.com/8A2RtwU.jpeg"
 
-# Sunrise/Sunset gradients
 GRADIENT_SUNRISE = "linear-gradient(#FFB75E,#ED8F03)"
 GRADIENT_SUNSET = "linear-gradient(#654ea3,#eaafc8)"
 
-# Cloud animation GIF
 CLOUDS_GIF = "https://i.imgur.com/cinbVvG.gif"
-
-# Rain GIF
 RAIN_GIF = "https://i.imgur.com/6hE6x4p.gif"
-
-# Lightning flash GIF
 LIGHTNING_GIF = "https://i.imgur.com/ZV7Yu1T.gif"
 
-# Logo (optional)
-SCHOOL_LOGO = "https://i.imgur.com/Z0Z0Z0Z.png"  # replace
-
-# Music
 MUSIC_URL = "https://www2.cs.uic.edu/~i101/SoundFiles/Bird.wav"
 st.audio(MUSIC_URL, autoplay=True)
 
 
 # -----------------------------------------------------
-# 🌤 WEATHER API SIMULATION
+# AUTO WEATHER
 # -----------------------------------------------------
 def get_auto_weather():
     s = datetime.now().second
@@ -50,61 +40,182 @@ def get_auto_weather():
 
 
 # -----------------------------------------------------
-# APPLY BACKGROUND CSS
+# BACKGROUND CSS
 # -----------------------------------------------------
 def set_background(bg_image=None, gradient=None):
     if gradient:
-        style = f"background: {gradient};"
+        css = f"background:{gradient};"
     else:
-        style = f"background-image:url('{bg_image}'); background-size:cover; background-position:center;"
+        css = (
+            f"background-image:url('{bg_image}');"
+            "background-size:cover;background-position:center;"
+        )
 
     st.markdown(
         f"""
-    <style>
-    .stApp {{
-        {style}
-    }}
-    </style>
-    """,
+        <style>
+        .stApp {{
+            {css}
+        }}
+        </style>
+        """,
         unsafe_allow_html=True,
     )
 
 
 # -----------------------------------------------------
-# CLOUD OVERLAY
+# CLOUDS / RAIN / LIGHTNING
 # -----------------------------------------------------
 def show_clouds():
     st.markdown(
         f"""
         <img src="{CLOUDS_GIF}" style="
-            width:100%;
-            position:fixed;
-            top:0;
-            left:0;
-            opacity:0.5;
-            z-index:0;
-        ">
+        width:100%;position:fixed;top:0;left:0;
+        opacity:0.5;z-index:1;">
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def show_rain():
+    st.markdown(
+        f"""
+        <img src="{RAIN_GIF}" style="
+        width:100%;position:fixed;top:0;left:0;
+        opacity:0.6;z-index:2;">
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def show_lightning():
+    st.markdown(
+        f"""
+        <img src="{LIGHTNING_GIF}" style="
+        width:100%;position:fixed;top:0;left:0;
+        opacity:0.9;z-index:3;">
         """,
         unsafe_allow_html=True,
     )
 
 
 # -----------------------------------------------------
-# RAIN OVERLAY
+# DIGITAL CLOCK
 # -----------------------------------------------------
-def show_rain():
-    st.markdown(
-        f"""
-        <img src="{RAIN_GIF}" style="
-            width:100%;
-            position:fixed;
-            top:0;
-            left:0;
-            opacity:0.6;
-            z-index:1;
-        ">
-        """,
-        unsafe_allow_html=True,
+def digital_clock():
+    now = datetime.now().strftime("%I:%M:%S %p")
+    return f"""
+    <div style='font-size:55px;font-weight:bold;
+    color:white;text-align:center;text-shadow:2px 2px 5px black;'>
+        {now}
+    </div>
+    """
+
+
+# -----------------------------------------------------
+# ANALOG CLOCK SVG
+# -----------------------------------------------------
+def analog_clock():
+    now = datetime.now()
+    sec = now.second
+    minute = now.minute
+    hour = now.hour % 12
+
+    sec_a = sec * 6
+    min_a = minute * 6
+    hour_a = hour * 30 + minute * 0.5
+
+    hx = 165 + 70 * math.sin(math.radians(hour_a))
+    hy = 165 - 70 * math.cos(math.radians(hour_a))
+
+    mx = 165 + 105 * math.sin(math.radians(min_a))
+    my = 165 - 105 * math.cos(math.radians(min_a))
+
+    sx = 165 + 130 * math.sin(math.radians(sec_a))
+    sy = 165 - 130 * math.cos(math.radians(sec_a))
+
+    return f"""
+    <svg width="330" height="330">
+        <circle cx="165" cy="165" r="150"
+        fill="rgba(255,255,255,0.25)" stroke="black" stroke-width="3"/>
+
+        <line x1="165" y1="165" x2="{hx}" y2="{hy}"
+        stroke="black" stroke-width="6"/>
+
+        <line x1="165" y1="165" x2="{mx}" y2="{my}"
+        stroke="black" stroke-width="4"/>
+
+        <line x1="165" y1="165" x2="{sx}" y2="{sy}"
+        stroke="red" stroke-width="2"/>
+
+        <circle cx="165" cy="165" r="6" fill="black"/>
+    </svg>
+    """
+
+
+# -----------------------------------------------------
+# SIDEBAR WEATHER CONTROL
+# -----------------------------------------------------
+st.sidebar.title("Weather Mode")
+mode = st.sidebar.radio(
+    "Select Mode",
+    ["Auto", "Sunny", "Cloudy", "Rainy", "Night", "Sunrise", "Sunset"],
+)
+
+
+# -----------------------------------------------------
+# MAIN LOOP
+# -----------------------------------------------------
+ui = st.empty()
+
+while True:
+    weather = mode if mode != "Auto" else get_auto_weather()
+
+    # Set backgrounds
+    if weather == "Sunny":
+        set_background(bg_image=BG_SUNNY)
+
+    elif weather == "Cloudy":
+        set_background(bg_image=BG_CLOUDY)
+        show_clouds()
+
+    elif weather == "Rainy":
+        set_background(bg_image=BG_RAINY)
+        show_rain()
+        if datetime.now().second % 7 == 0:
+            show_lightning()
+
+    elif weather == "Night":
+        set_background(bg_image=BG_NIGHT)
+
+    elif weather == "Sunrise":
+        set_background(gradient=GRADIENT_SUNRISE)
+
+    elif weather == "Sunset":
+        set_background(gradient=GRADIENT_SUNSET)
+
+    # ---------------------------
+    # UI Update
+    # ---------------------------
+    with ui.container():
+        st.markdown(
+            f"""
+            <h1 style='text-align:center;color:white;
+            text-shadow:3px 3px 5px black;'>
+                🌿 Nature Clock Ultra Pro — {weather} Mode
+            </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(digital_clock(), unsafe_allow_html=True)
+
+        st.markdown(
+            f"<div style='text-align:center;margin-top:-10px;'>{analog_clock()}</div>",
+            unsafe_allow_html=True,
+        )
+
+    time.sleep(1)        unsafe_allow_html=True,
     )
 
 def show_lightning():
