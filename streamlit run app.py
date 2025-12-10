@@ -3,10 +3,10 @@ import datetime
 import math
 import time
 
-st.set_page_config(page_title="Animated Analog Clock", layout="wide")
+st.set_page_config(page_title="Analog Clock Only", layout="wide")
 
 # ----------------------------
-# Time helpers
+# Time helper
 # ----------------------------
 def get_time():
     now = datetime.datetime.now()
@@ -16,12 +16,12 @@ def get_time():
 # Analog SVG generator
 # ----------------------------
 def analog_svg(hour, minute, second, size=360):
-    # angles
+    # Convert angles
     second_angle = second * 6
     minute_angle = minute * 6 + second * 0.1
     hour_angle = (hour % 12) * 30 + minute * 0.5
 
-    # convert to radians
+    # Convert to radians
     hr = math.radians(hour_angle - 90)
     mr = math.radians(minute_angle - 90)
     sr = math.radians(second_angle - 90)
@@ -30,10 +30,12 @@ def analog_svg(hour, minute, second, size=360):
     cy = size // 2
     r = int(size * 0.36)
 
+    # Hand lengths
     hour_len = r * 0.58
-    min_len = r * 0.8
+    min_len = r * 0.76
     sec_len = r * 0.92
 
+    # Calculate end points
     hx = cx + hour_len * math.cos(hr)
     hy = cy + hour_len * math.sin(hr)
 
@@ -44,7 +46,7 @@ def analog_svg(hour, minute, second, size=360):
     sy = cy + sec_len * math.sin(sr)
 
     svg = f"""
-    <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
+    <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <radialGradient id="g" cx="50%" cy="40%">
                 <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
@@ -75,31 +77,30 @@ def analog_svg(hour, minute, second, size=360):
 # ----------------------------
 def get_gradient(second):
     p = second / 60.0
-
     day = (135, 206, 250)
     afternoon = (250, 214, 165)
     night = (25, 25, 112)
 
     if p < 1/3:
         a = p / (1/3)
-        r = int(day[0] + a * (afternoon[0] - day[0]))
-        g = int(day[1] + a * (afternoon[1] - day[1]))
-        b = int(day[2] + a * (afternoon[2] - day[2]))
+        r = int(day[0] + a * (afternoon[0]-day[0]))
+        g = int(day[1] + a * (afternoon[1]-day[1]))
+        b = int(day[2] + a * (afternoon[2]-day[2]))
     elif p < 2/3:
         a = (p - 1/3) / (1/3)
-        r = int(afternoon[0] + a * (night[0] - afternoon[0]))
-        g = int(afternoon[1] + a * (night[1] - afternoon[1]))
-        b = int(afternoon[2] + a * (night[2] - afternoon[2]))
+        r = int(afternoon[0] + a * (night[0]-afternoon[0]))
+        g = int(afternoon[1] + a * (night[1]-afternoon[1]))
+        b = int(afternoon[2] + a * (night[2]-afternoon[2]))
     else:
         a = (p - 2/3) / (1/3)
-        r = int(night[0] + a * (day[0] - night[0]))
-        g = int(night[1] + a * (day[1] - night[1]))
-        b = int(night[2] + a * (day[2] - night[2]))
+        r = int(night[0] + a * (day[0]-night[0]))
+        g = int(night[1] + a * (day[1]-night[1]))
+        b = int(night[2] + a * (day[2]-night[2]))
 
     return f"rgb({r},{g},{b})"
 
 # ----------------------------
-# UI loop
+# Main UI loop
 # ----------------------------
 placeholder = st.empty()
 
