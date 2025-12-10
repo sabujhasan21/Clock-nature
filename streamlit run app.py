@@ -1,44 +1,40 @@
 import streamlit as st
 import time
 import math
-import random
 from datetime import datetime
 
 st.set_page_config(page_title="Nature Clock Pro", layout="wide")
 
 # -----------------------------------------------------
-# 🎨 CUSTOM REALISTIC ILLUSTRATION BACKGROUNDS
-# (You can replace these with your own image URLs)
+# 🌄 REALISTIC ILLUSTRATED BACKGROUNDS (You can replace them)
 # -----------------------------------------------------
 BG_SUNNY = "https://i.imgur.com/R0BgbaN.jpeg"
 BG_CLOUDY = "https://i.imgur.com/k8hrmH0.jpeg"
 BG_RAINY  = "https://i.imgur.com/VXQ4Rh4.jpeg"
 BG_NIGHT  = "https://i.imgur.com/8A2RtwU.jpeg"
 
-# -----------------------------------------------------
-# 🎵 MUSIC / SOUND EFFECTS
-# -----------------------------------------------------
+# 🎵 Nature Sound (Replace if needed)
 MUSIC_URL = "https://www2.cs.uic.edu/~i101/SoundFiles/Bird.wav"
-
 st.audio(MUSIC_URL, autoplay=True)
 
+
 # -----------------------------------------------------
-# 🌤 WEATHER SIMULATION (auto changes every 15 seconds)
+# 🌤 WEATHER LOGIC (Auto-change every 15 seconds)
 # -----------------------------------------------------
-def get_weather_by_seconds():
+def get_weather():
     s = datetime.now().second
-
     if 0 <= s < 15:
-        return "sunny", BG_SUNNY
+        return "Sunny", BG_SUNNY
     elif 15 <= s < 30:
-        return "cloudy", BG_CLOUDY
+        return "Cloudy", BG_CLOUDY
     elif 30 <= s < 45:
-        return "rainy", BG_RAINY
+        return "Rainy", BG_RAINY
     else:
-        return "night", BG_NIGHT
+        return "Night", BG_NIGHT
+
 
 # -----------------------------------------------------
-# 🌄 APPLY BACKGROUND IMAGE
+# BACKGROUND APPLY
 # -----------------------------------------------------
 def apply_background(img):
     st.markdown(
@@ -55,10 +51,11 @@ def apply_background(img):
         unsafe_allow_html=True,
     )
 
+
 # -----------------------------------------------------
-# 🕒 ANALOG CLOCK SVG
+# 🕒 ANALOG CLOCK SVG (Your SVG exact output integrated)
 # -----------------------------------------------------
-def analog_clock_svg():
+def generate_clock():
     now = datetime.now()
     sec = now.second
     minute = now.minute
@@ -68,26 +65,34 @@ def analog_clock_svg():
     min_angle = minute * 6
     hour_angle = hour * 30 + minute * 0.5
 
+    # Dynamic hand coordinates
+    hour_x = 165 + 70 * math.sin(math.radians(hour_angle))
+    hour_y = 165 - 70 * math.cos(math.radians(hour_angle))
+
+    min_x = 165 + 105 * math.sin(math.radians(min_angle))
+    min_y = 165 - 105 * math.cos(math.radians(min_angle))
+
+    sec_x = 165 + 130 * math.sin(math.radians(sec_angle))
+    sec_y = 165 - 130 * math.cos(math.radians(sec_angle))
+
     svg = f"""
     <svg width="330" height="330">
-        <circle cx="165" cy="165" r="150" fill="rgba(255,255,255,0.25)" stroke="black" stroke-width="3"/>
-
         <!-- Hour Hand -->
         <line x1="165" y1="165"
-              x2="{165 + 70 * math.sin(math.radians(hour_angle))}"
-              y2="{165 - 70 * math.cos(math.radians(hour_angle))}"
+              x2="{hour_x}"
+              y2="{hour_y}"
               stroke="black" stroke-width="6" />
 
         <!-- Minute Hand -->
         <line x1="165" y1="165"
-              x2="{165 + 105 * math.sin(math.radians(min_angle))}"
-              y2="{165 - 105 * math.cos(math.radians(min_angle))}"
+              x2="{min_x}"
+              y2="{min_y}"
               stroke="black" stroke-width="4" />
 
         <!-- Second Hand -->
         <line x1="165" y1="165"
-              x2="{165 + 130 * math.sin(math.radians(sec_angle))}"
-              y2="{165 - 130 * math.cos(math.radians(sec_angle))}"
+              x2="{sec_x}"
+              y2="{sec_y}"
               stroke="red" stroke-width="2" />
 
         <circle cx="165" cy="165" r="6" fill="black" />
@@ -95,16 +100,51 @@ def analog_clock_svg():
     """
     return svg
 
+
 # -----------------------------------------------------
 # 🧭 DIGITAL CLOCK
 # -----------------------------------------------------
 def digital_clock():
     now = datetime.now().strftime("%I:%M:%S %p")
-    return f"<div style='font-size:48px; font-weight:bold; color:white; text-align:center;'>{now}</div>"
+    return (
+        f"<div style='font-size:50px; font-weight:bold; text-align:center; color:white;'>"
+        f"{now}</div>"
+    )
+
 
 # -----------------------------------------------------
 # 🚀 MAIN LOOP
 # -----------------------------------------------------
+ui = st.empty()
+
+while True:
+    weather_name, bg = get_weather()
+    apply_background(bg)
+
+    with ui.container():
+        st.markdown(
+            f"""
+            <h1 style="text-align:center; color:white; text-shadow:2px 2px 5px black;">
+            🌿 Nature Clock Pro — {weather_name} Mode
+            </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Digital Clock
+        st.markdown(digital_clock(), unsafe_allow_html=True)
+
+        # Analog Clock
+        st.markdown(
+            f"""
+            <div style='text-align:center; margin-top:-10px;'>
+                {generate_clock()}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    time.sleep(1)# -----------------------------------------------------
 container = st.empty()
 
 while True:
