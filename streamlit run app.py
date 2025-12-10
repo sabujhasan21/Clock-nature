@@ -1,110 +1,149 @@
 import streamlit as st
-import time
+import datetime
 import math
-from datetime import datetime
+import time
 
-st.set_page_config(page_title="Nature Clock Ultra Pro", layout="wide")
+st.set_page_config(page_title="Animated Nature Clock", layout="wide")
 
-# -----------------------------------------------------
-# 🌄 BACKGROUNDS
-# -----------------------------------------------------
-BG_SUNNY = "https://i.imgur.com/R0BgbaN.jpeg"
-BG_CLOUDY = "https://i.imgur.com/k8hrmH0.jpeg"
-BG_RAINY = "https://i.imgur.com/VXQ4Rh4.jpeg"
-BG_NIGHT = "https://i.imgur.com/8A2RtwU.jpeg"
+# -------------------------------------------
+# FUNCTIONS
+# -------------------------------------------
 
-GRADIENT_SUNRISE = "linear-gradient(#FFB75E,#ED8F03)"
-GRADIENT_SUNSET = "linear-gradient(#654ea3,#eaafc8)"
+def get_time():
+    now = datetime.datetime.now()
+    return now.hour, now.minute, now.second
 
-CLOUDS_GIF = "https://i.imgur.com/cinbVvG.gif"
-RAIN_GIF = "https://i.imgur.com/6hE6x4p.gif"
-LIGHTNING_GIF = "https://i.imgur.com/ZV7Yu1T.gif"
+def analog_svg(hour, minute, second):
+    # Convert to angles
+    second_angle = second * 6
+    minute_angle = minute * 6 + second * 0.1
+    hour_angle = (hour % 12) * 30 + minute * 0.5
 
-MUSIC_URL = "https://www2.cs.uic.edu/~i101/SoundFiles/Bird.wav"
-st.audio(MUSIC_URL, autoplay=True)
+    # Convert to radians
+    hr = math.radians(hour_angle - 90)
+    mr = math.radians(minute_angle - 90)
+    sr = math.radians(second_angle - 90)
 
+    cx, cy, r = 165, 165, 120
 
-# -----------------------------------------------------
-# AUTO WEATHER
-# -----------------------------------------------------
-def get_auto_weather():
-    s = datetime.now().second
-    if 0 <= s < 15:
-        return "Sunny"
-    elif 15 <= s < 30:
-        return "Cloudy"
-    elif 30 <= s < 45:
-        return "Rainy"
+    # Hand lengths
+    hour_len = 70
+    min_len = 95
+    sec_len = 110
+
+    hx = cx + hour_len * math.cos(hr)
+    hy = cy + hour_len * math.sin(hr)
+
+    mx = cx + min_len * math.cos(mr)
+    my = cy + min_len * math.sin(mr)
+
+    sx = cx + sec_len * math.cos(sr)
+    sy = cy + sec_len * math.sin(sr)
+
+    svg = f"""
+    <svg width="330" height="330">
+
+        <!-- Clock outer ring -->
+        <circle cx="{cx}" cy="{cy}" r="{r}" stroke="white" stroke-width="5" fill="#ffffff33" />
+
+        <!-- Hour Hand -->
+        <line x1="{cx}" y1="{cy}" x2="{hx}" y2="{hy}" stroke="black" stroke-width="6" />
+
+        <!-- Minute Hand -->
+        <line x1="{cx}" y1="{cy}" x2="{mx}" y2="{my}" stroke="black" stroke-width="4" />
+
+        <!-- Second Hand -->
+        <line x1="{cx}" y1="{cy}" x2="{sx}" y2="{sy}" stroke="red" stroke-width="2" />
+
+        <circle cx="{cx}" cy="{cy}" r="6" fill="black" />
+    </svg>
+    """
+    return svg
+
+# -------------------------------------------
+# ANIMATED GRADIENT BACKGROUND
+# -------------------------------------------
+
+def get_gradient(second):
+    # 60 sec cycle → background color pulse
+    p = second / 60
+
+    # day → afternoon → night
+    # smoothly blending colors
+    # (R, G, B)
+    day = (135, 206, 250)
+    afternoon = (250, 214, 165)
+    night = (25, 25, 112)
+
+    if p < 0.33:
+        a = p / 0.33
+        r = int(day[0] + a * (afternoon[0] - day[0]))
+        g = int(day[1] + a * (afternoon[1] - day[1]))
+        b = int(day[2] + a * (afternoon[2] - day[2]))
+    elif p < 0.66:
+        a = (p - 0.33) / 0.33
+        r = int(afternoon[0] + a * (night[0] - afternoon[0]))
+        g = int(afternoon[1] + a * (night[1] - afternoon[1]))
+        b = int(afternoon[2] + a * (night[2] - afternoon[2]))
     else:
-        return "Night"
+        a = (p - 0.66) / 0.34
+        r = int(night[0] + a * (day[0] - night[0]))
+        g = int(night[1] + a * (day[1] - night[1]))
+        b = int(night[2] + a * (day[2] - night[2]))
 
+    return f"rgb({r},{g},{b})"
 
-# -----------------------------------------------------
-# BACKGROUND CSS
-# -----------------------------------------------------
-def set_background(bg_image=None, gradient=None):
-    if gradient:
-        css = f"background:{gradient};"
-    else:
-        css = (
-            f"background-image:url('{bg_image}');"
-            "background-size:cover;background-position:center;"
+# -------------------------------------------
+# UI LOOP (AUTO REFRESH EVERY SECOND)
+# -------------------------------------------
+
+placeholder = st.empty()
+
+while True:
+    hour, minute, second = get_time()
+    bg = get_gradient(second)
+
+    with placeholder.container():
+        st.markdown(
+            f"""
+            <style>
+                .stApp {{
+                    background: linear-gradient(180deg, {bg}, #000000);
+                    transition: background 1s linear;
+                    background-size: cover;
+                }}
+            </style>
+            """,
+            unsafe_allow_html=True
         )
 
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            {css}
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        col1, col2 = st.columns([1, 1])
 
+        with col1:
+            st.markdown("## 🕰️ Analog Clock")
+            st.markdown(analog_svg(hour, minute, second), unsafe_allow_html=True)
 
-# -----------------------------------------------------
-# CLOUDS / RAIN / LIGHTNING
-# -----------------------------------------------------
-def show_clouds():
-    st.markdown(
-        f"""
-        <img src="{CLOUDS_GIF}" style="
-        width:100%;position:fixed;top:0;left:0;
-        opacity:0.5;z-index:1;">
-        """,
-        unsafe_allow_html=True,
-    )
+        with col2:
+            st.markdown("## ⏰ Digital Clock")
+            st.markdown(
+                f"""
+                <div style="
+                    font-size: 60px;
+                    padding: 20px;
+                    background:#ffffff44;
+                    width:330px;
+                    border-radius:15px;
+                    text-align:center;
+                    color:white;
+                    backdrop-filter: blur(8px);
+                ">
+                    {hour:02d}:{minute:02d}:{second:02d}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-
-def show_rain():
-    st.markdown(
-        f"""
-        <img src="{RAIN_GIF}" style="
-        width:100%;position:fixed;top:0;left:0;
-        opacity:0.6;z-index:2;">
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def show_lightning():
-    st.markdown(
-        f"""
-        <img src="{LIGHTNING_GIF}" style="
-        width:100%;position:fixed;top:0;left:0;
-        opacity:0.9;z-index:3;">
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# -----------------------------------------------------
-# DIGITAL CLOCK
-# -----------------------------------------------------
-def digital_clock():
-    now = datetime.now().strftime("%I:%M:%S %p")
-    return f"""
+    time.sleep(1)    return f"""
     <div style='font-size:55px;font-weight:bold;
     color:white;text-align:center;text-shadow:2px 2px 5px black;'>
         {now}
