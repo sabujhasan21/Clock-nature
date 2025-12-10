@@ -3,7 +3,7 @@ import datetime
 import math
 import time
 
-st.set_page_config(page_title="Animated Nature Clock (Fixed)", layout="wide")
+st.set_page_config(page_title="Animated Analog Clock", layout="wide")
 
 # ----------------------------
 # Time helpers
@@ -15,13 +15,13 @@ def get_time():
 # ----------------------------
 # Analog SVG generator
 # ----------------------------
-def analog_svg(hour, minute, second, size=330):
+def analog_svg(hour, minute, second, size=360):
     # angles
     second_angle = second * 6
     minute_angle = minute * 6 + second * 0.1
     hour_angle = (hour % 12) * 30 + minute * 0.5
 
-    # convert to radians and offset -90 so 0deg is top
+    # convert to radians
     hr = math.radians(hour_angle - 90)
     mr = math.radians(minute_angle - 90)
     sr = math.radians(second_angle - 90)
@@ -43,7 +43,8 @@ def analog_svg(hour, minute, second, size=330):
     sx = cx + sec_len * math.cos(sr)
     sy = cy + sec_len * math.sin(sr)
 
-    svg = f"""<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" xmlns="http://www.w3.org/2000/svg">
+    svg = f"""
+    <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}">
         <defs>
             <radialGradient id="g" cx="50%" cy="40%">
                 <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
@@ -65,19 +66,19 @@ def analog_svg(hour, minute, second, size=330):
 
         <!-- center -->
         <circle cx="{cx}" cy="{cy}" r="6" fill="black"/>
-    </svg>"""
+    </svg>
+    """
     return svg
 
 # ----------------------------
-# Gradient background (no image)
+# Animated gradient background
 # ----------------------------
 def get_gradient(second):
-    # 60-second cycle; map to three zones: day -> afternoon -> night -> day
     p = second / 60.0
 
-    day = (135, 206, 250)        # light sky
-    afternoon = (250, 214, 165)  # warm
-    night = (25, 25, 112)        # deep blue
+    day = (135, 206, 250)
+    afternoon = (250, 214, 165)
+    night = (25, 25, 112)
 
     if p < 1/3:
         a = p / (1/3)
@@ -107,58 +108,27 @@ while True:
     bg_color = get_gradient(second)
 
     with placeholder.container():
-        # background style
         st.markdown(
             f"""
             <style>
             .stApp {{
-                background: linear-gradient(180deg, {bg_color}, #000000 90%);
+                background: linear-gradient(180deg, {bg_color}, #000000 95%);
                 transition: background 0.9s linear;
                 background-attachment: fixed;
-            }}
-            .clock-box {{
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                gap:40px;
-                padding-top:40px;
             }}
             </style>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown(f"<h1 style='text-align:center;color:white;text-shadow:2px 2px 6px rgba(0,0,0,0.7);'>🌿 Animated Nature Clock</h1>", unsafe_allow_html=True)
+        st.markdown(
+            "<h1 style='text-align:center;color:white;'>🕰️ Animated Analog Clock</h1>",
+            unsafe_allow_html=True,
+        )
 
-        # two columns
-        col1, col2 = st.columns([1, 1])
-
-        with col1:
-            st.markdown("## 🕰️ Analog Clock")
-            st.markdown(analog_svg(hour, minute, second, size=360), unsafe_allow_html=True)
-
-        with col2:
-            st.markdown("## ⏰ Digital Clock")
-            st.markdown(
-                f"""
-                <div style="
-                    width:360px;
-                    margin:0 auto;
-                    padding:18px;
-                    border-radius:14px;
-                    text-align:center;
-                    font-size:56px;
-                    font-weight:700;
-                    color:white;
-                    background: rgba(255,255,255,0.12);
-                    backdrop-filter: blur(6px);
-                ">
-                    {hour:02d}:{minute:02d}:{second:02d}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='display:flex;justify-content:center;padding-top:20px;'>{analog_svg(hour,minute,second,360)}</div>",
+            unsafe_allow_html=True
+        )
 
     time.sleep(1)
